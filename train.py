@@ -7,7 +7,7 @@ from torch import optim,nn
 from tqdm import tqdm
 
 
-has_gpu = True
+has_gpu = False
 PATH = 'logs/model.pkl'
 LEARNING_RATE = 0.01
 BATCH_SIZE = 64
@@ -23,13 +23,13 @@ def train(net):
     if has_gpu :
         net = net.cuda()
 
-    criterion = nn.CrossEntropyLoss() # use a Classification Cross-Entropy loss
+    criterion = nn.MSELoss() # use a Classification Cross-Entropy loss
     optimizer = optim.SGD(net.parameters(), lr=LEARNING_RATE, momentum=0.9)
 
     for epoch in range(EPOCH): # loop over the dataset multiple times
         
         running_loss = 0.0
-        for i, data in tqdm(enumerate(trainloader, 0)):
+        for i, data in tqdm(enumerate(trainloader, 0),total = 100):
             # get the inputs
             inputs, labels = data
 
@@ -51,6 +51,8 @@ def train(net):
             
             # print statistics
             running_loss += loss.data[0]
+            if i == 100 :
+                break
                 
         print('epoch: %d loss: %.3f' % (epoch+1, running_loss / len(trainloader)))
         running_loss = 0.0
@@ -60,8 +62,7 @@ def train(net):
     print('model save at {}'.format(PATH))
 
 def verification(net):
-    testloader = get_testloader(batch_size = BATCH_SIZE)
-    
+    testloader = data_generator(batch_size = BATCH_SIZE)
     correct = 0
     total = 0
     for data in testloader:
@@ -72,9 +73,11 @@ def verification(net):
         _, predicted = torch.max(outputs.data, 1)
         total += labels.size(0)
         correct += (predicted == labels).sum()
+        if total > 10000 :
+            break
 
     print('Accuracy of the network on the 10000 test images: %d %%' % (100 * correct / total))
-
+"""
     class_correct = list(0. for i in range(100))
     class_total = list(0. for i in range(100))
     for data in testloader:
@@ -91,8 +94,7 @@ def verification(net):
 
     #for i in range(100):
     #    print('Accuracy of %5s : %2d %%' % (i, 100 * class_correct[i] / class_total[i]))
-
-
+    """
 if __name__ =='__main__':
     net = Net()
     train(net)
