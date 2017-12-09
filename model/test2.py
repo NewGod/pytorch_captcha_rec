@@ -63,8 +63,8 @@ class Net(nn.Module):
         x = F.relu(self.fc4(x))
         x = F.relu(self.fc5(x))
         x = self.fc6(x)
-        x = F.softmax(x)
         x = x.view(-1,4,36)
+        x = F.softmax(x)
         #####output#####
         return x
 

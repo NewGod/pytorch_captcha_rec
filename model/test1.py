@@ -6,7 +6,7 @@ SIZE2 = 18
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.softmax = nn.LogSoftmax(dim = 0)
+        # self.softmax = nn.LogSoftmax(dim = 0)
         self.pool   = nn.MaxPool2d(2,2)
         self.conv11 = nn.Conv2d(3, SIZE1, 3, padding = 1) # 1 input image channel, 64 output channels, 5x5 square convolution kernel
         self.conv12 = nn.Conv2d(SIZE1, SIZE1, 3, padding = 1);
