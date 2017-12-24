@@ -1,7 +1,7 @@
 import numpy
 import torch
 from torch.autograd import Variable
-from model.vgg_like import Net
+from model.vgg import Net
 from torch import optim,nn
 from tqdm import tqdm
 from dataset import *

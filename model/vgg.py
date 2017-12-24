@@ -30,6 +30,8 @@ class Net(nn.Module):
         #####layer 3##### input 64 * [17*42]
         self.conv31 = nn.Conv2d(SIZE2, SIZE3, 3)
         self.conv32 = nn.Conv2d(SIZE3, SIZE3, 3)
+        self.conv33 = nn.Conv2d(SIZE3, SIZE3, 3)
+        self.conv34 = nn.Conv2d(SIZE3, SIZE3, 3)
         #####layer 3##### output 128 * [13*38]
         
         #maxpool output 128 * [6*19]
@@ -37,6 +39,8 @@ class Net(nn.Module):
         #####layer 4##### input 128 * [6*19]
         self.conv41 = nn.Conv2d(SIZE3, SIZE4, 3)
         self.conv42 = nn.Conv2d(SIZE4, SIZE4, 3)
+        self.conv43 = nn.Conv2d(SIZE4, SIZE4, 3)
+        self.conv44 = nn.Conv2d(SIZE4, SIZE4, 3)
         #####layer 4##### output 256 * [2*15]
         
         #maxpool output 256 * [1*7]
@@ -49,31 +53,31 @@ class Net(nn.Module):
     def forward(self, x):
         
         #####layer 1##### input
-        x = self.conv11(x)
-        x = self.conv12(x)
-        x = self.pool(F.relu(x))
+        x = F.relu(self.conv11(x))
+        x = F.relu(self.conv12(x))
+        x = self.pool(x)
         #####layer 1##### output
         
         #####layer 2##### input
-        x = self.conv21(x)
-        x = self.conv22(x)
-        x = self.pool(F.relu(x))
+        x = F.relu(self.conv21(x))
+        x = F.relu(self.conv22(x))
+        x = self.pool(x)
         #####layer 2##### output
         
         #####layer 3##### input
-        x = self.conv31(x)
-        x = self.conv32(x)
-        x = self.conv32(x)
-        x = self.conv32(x)
-        x = self.pool(F.relu(x))
+        x = F.relu(self.conv31(x))
+        x = F.relu(self.conv32(x))
+        x = F.relu(self.conv33(x))
+        x = F.relu(self.conv34(x))
+        x = self.pool(x)
         #####layer 3##### output
         
         #####layer 3##### input
-        x = self.conv41(x)
-        x = self.conv42(x)
-        x = self.conv42(x)
-        x = self.conv42(x)
-        x = self.pool(F.relu(x))
+        x = F.relu(self.conv41(x))
+        x = F.relu(self.conv42(x))
+        x = F.relu(self.conv43(x))
+        x = F.relu(self.conv44(x))
+        x = self.pool(x)
         #####layer 3##### output
         
         #####output#####
