@@ -9,7 +9,7 @@ import os
 import pickle
 import datetime
 from logger import Logger
-
+import argparse
 
 has_gpu = False
 PATH = 'logs/'
@@ -21,24 +21,24 @@ EPOCH_SIZE = 600
 VERI_SIZE = 600
 
 def model_load(net):
-    net.load_state_dict(torch.load(MODEL_PATH))
-    print('model load from {}'.format(MODEL_PATH))
+    net.load_state_dict(torch.load(args.path))
+    print('model load from {}'.format(args.path))
 
 def train(net):
     criterion = nn.BCELoss() # use a Classification Cross-Entropy loss
-    optimizer = optim.SGD(net.parameters(), lr=LEARNING_RATE, momentum=0.9)
+    optimizer = optim.SGD(net.parameters(), lr=args.learning_rate, momentum=0.9)
     logger = Logger(PATH)
     step = 0
 
-    for epoch in range(EPOCH): # loop over the dataset multiple times
-        trainloader = data_generator(times = EPOCH_SIZE,batch_size = BATCH_SIZE)
+    for epoch in range(args.epoch): # loop over the dataset multiple times
+        trainloader = data_generator(times = EPOCH_SIZE,batch_size = args.batch_size)
         
         running_loss = 0.0
         for i, data in tqdm(enumerate(trainloader, 0),total = EPOCH_SIZE):
             # get the inputs
             inputs, labels = data
 
-            if has_gpu:
+            if args.gpu:
                 inputs = inputs.cuda()
                 labels = labels.cuda()
             
@@ -62,57 +62,50 @@ def train(net):
         # print statistics
     print('Finished Training')
     
-    torch.save(net.state_dict(), MODEL_PATH)
-    print('model save at {}'.format(MODEL_PATH))
+    torch.save(net.state_dict(), args.path)
+    print('model save at {}'.format(args.path))
 
 def verification(net):
     print("start verification")
-    testloader = data_generator(times = VERI_SIZE, batch_size = BATCH_SIZE)
+    testloader = data_generator(times = VERI_SIZE, batch_size = args.batch_size)
     correct = 0
     total = 0
     for i,data in tqdm(enumerate(testloader,0),total = VERI_SIZE):
         images, labels = data
-        if has_gpu:
+        if args.gpu:
             images,labels = images.cuda(),labels.cuda()
         outputs = net(Variable(images))
         total += labels.size(0)
-        if has_gpu:
+        if args.gpu:
             labels = labels.cpu()
             outputs = outputs.cpu()
         outputs = decode(outputs.data.numpy())
         labels = decode(labels.numpy())
-        correct += np.array([outputs[i]==labels[i] for i in range(BATCH_SIZE)]).sum()
+        correct += np.array([outputs[i]==labels[i] for i in range(args.batch_size)]).sum()
 
     print('Accuracy of the network on the %d test images: %d %%' % (total,100 * correct / total))
-"""
-    class_correct = list(0. for i in range(100))
-    class_total = list(0. for i in range(100))
-    for data in testloader:
-        images, labels = data
-        if has_gpu:
-            images,labels = images.cuda(),labels.cuda()
-        outputs = net(Variable(images))
-        _, predicted = torch.max(outputs.data, 1)
-        c = (predicted == labels).squeeze()
-        for i in range(min(BATCH_SIZE,list(c.size())[0])):
-            label = labels[i]
-            class_correct[label] += c[i]
-            class_total[label] += 1
-
-    for i in range(100):
-        print('Accuracy of %5s : %2d %%' % (i, 100 * class_correct[i] / class_total[i]))
-"""
 if __name__ =='__main__':
-    starttime = datetime.datetime.now()
+    parser = argparse.ArgumentParser(description="Train or verify your model")
+    parser.add_argument('-v','--verify',help='Verify the model',action='store_true')
+    parser.add_argument('-g','--gpu',help='use the gpu to speed up the program',action='store_true')
+    parser.add_argument('-b','--batch_size',help='Change the batch_size of train process',type = int, default=BATCH_SIZE)
+    parser.add_argument('-p','--path',help='the model path',type = str, default = MODEL_PATH)
+    parser.add_argument('-e','--epoch',help='the epoch size',type = int, default = EPOCH)
+    parser.add_argument('-lr','--learning_rate',help='the learning rate',type = float, default = LEARNING_RATE)
+    args = parser.parse_args()
     if not os.path.isdir(PATH):
         os.mkdir(PATH)
 
     net = Net()
-    if has_gpu :
+    if args.gpu :
         net = net.cuda()
-    train(net)
-    #model_load(net)
 
-    endtime = datetime.datetime.now()
-
-    print(str(endtime - starttime))
+    if args.verify != None:
+        starttime = datetime.datetime.now()
+        train(net)
+        endtime = datetime.datetime.now()
+        verification(net)
+        print(str(endtime - starttime))
+    else:
+        model_load(net)
+        verification(net)
