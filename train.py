@@ -1,31 +1,34 @@
 import numpy
 import torch
-from dataset import *
 from torch.autograd import Variable
-from model.test import Net
+from model.vgg_like import Net
 from torch import optim,nn
 from tqdm import tqdm
+from dataset import *
+import os
+import pickle
+import datetime
+from logger import Logger
 
 
 has_gpu = False
-PATH = 'logs/model.pkl'
+PATH = 'logs/'
+MODEL_PATH = os.path.join(PATH,'model.pkl')
 LEARNING_RATE = 0.01
-BATCH_SIZE = 16
-EPOCH = 10
-EPOCH_SIZE = 100
-VERI_SIZE = 10
+BATCH_SIZE = 64
+EPOCH = 40
+EPOCH_SIZE = 600
+VERI_SIZE = 600
 
 def model_load(net):
-    net.load_state_dict(torch.load(PATH))
-    print('model load from {}'.format(PATH))
+    net.load_state_dict(torch.load(MODEL_PATH))
+    print('model load from {}'.format(MODEL_PATH))
 
 def train(net):
-
-    if has_gpu :
-        net = net.cuda()
-
-    criterion = nn.MSELoss() # use a Classification Cross-Entropy loss
+    criterion = nn.BCELoss() # use a Classification Cross-Entropy loss
     optimizer = optim.SGD(net.parameters(), lr=LEARNING_RATE, momentum=0.9)
+    logger = Logger(PATH)
+    step = 0
 
     for epoch in range(EPOCH): # loop over the dataset multiple times
         trainloader = data_generator(times = EPOCH_SIZE,batch_size = BATCH_SIZE)
@@ -34,8 +37,6 @@ def train(net):
         for i, data in tqdm(enumerate(trainloader, 0),total = EPOCH_SIZE):
             # get the inputs
             inputs, labels = data
-            if (i==0):
-                print(decode(labels.numpy()))
 
             if has_gpu:
                 inputs = inputs.cuda()
@@ -52,30 +53,32 @@ def train(net):
             loss = criterion(outputs, labels)
             loss.backward()        
             optimizer.step()
-            
-            # print statistics
             running_loss += loss.data[0]
-                
-        print('epoch: %d loss: %.3f' % (epoch+1, running_loss / EPOCH_SIZE))
+            logger.scalar_summary('loss', loss.data[0], step);
+            step = step + 1
+            
+        print('epoch: %d   loss: %.3f' % (epoch+1, running_loss / EPOCH_SIZE))
         running_loss = 0.0
+        # print statistics
     print('Finished Training')
     
-    torch.save(net.state_dict(), PATH)
-    print('model save at {}'.format(PATH))
+    torch.save(net.state_dict(), MODEL_PATH)
+    print('model save at {}'.format(MODEL_PATH))
 
 def verification(net):
     print("start verification")
-    testloader = data_generator(batch_size = BATCH_SIZE)
+    testloader = data_generator(times = VERI_SIZE, batch_size = BATCH_SIZE)
     correct = 0
     total = 0
     for i,data in tqdm(enumerate(testloader,0),total = VERI_SIZE):
-        if i == VERI_SIZE:
-            break
         images, labels = data
         if has_gpu:
             images,labels = images.cuda(),labels.cuda()
         outputs = net(Variable(images))
         total += labels.size(0)
+        if has_gpu:
+            labels = labels.cpu()
+            outputs = outputs.cpu()
         outputs = decode(outputs.data.numpy())
         labels = decode(labels.numpy())
         correct += np.array([outputs[i]==labels[i] for i in range(BATCH_SIZE)]).sum()
@@ -100,7 +103,16 @@ def verification(net):
         print('Accuracy of %5s : %2d %%' % (i, 100 * class_correct[i] / class_total[i]))
 """
 if __name__ =='__main__':
+    starttime = datetime.datetime.now()
+    if not os.path.isdir(PATH):
+        os.mkdir(PATH)
+
     net = Net()
+    if has_gpu :
+        net = net.cuda()
     train(net)
     #model_load(net)
-    verification(net)
+
+    endtime = datetime.datetime.now()
+
+    print(str(endtime - starttime))
