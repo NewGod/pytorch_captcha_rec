@@ -21,4 +21,4 @@ Here we do some experiment and get the 50% accuracy. The working logs tabel is s
 
 ![table](pic/table.png)
 
-Here is our [report](www.flozber.com/share/pytorch_captcha_rec_report.pdf)
+Here is our [report](http://www.flozber.com/share/pytorch_captcha_rec_report.pdf)
